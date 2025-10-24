@@ -1,29 +1,65 @@
-name: Push Branch Validator
+# Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
+name: validar_push
 
+# Controla cuándo se ejecutará el flujo de trabajo
 on:
+  # Se ejecuta en cada push a cualquier rama que no sea 'main'
   push:
-    branches:
-      - '!main'      # Excluye la rama 'main'
-      - '!master'    # Excluye la rama 'master'
+    branches-ignore:
+      - 'main'
+      - 'develop' # Opcional: ignora también la rama develop
+  # Se ejecuta cuando se abre o actualiza un Pull Request
+  pull_request:
+    types: [opened, synchronize, reopened]
 
+# Una secuencia de trabajos que se ejecutarán
 jobs:
-  validate-branch-name:
+  # Nombre del trabajo
+  check-branch-name:
+    # El tipo de máquina virtual en la que se ejecutará el trabajo
     runs-on: ubuntu-latest
+
+    # Una secuencia de pasos que componen el trabajo
     steps:
-      - name: Check Branch Prefix
+      # Paso 1: Descarga el código del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Paso 2: Verifica el nombre de la rama usando un script
+      - name: Check branch name
         run: |
-          # Obtenemos el nombre de la rama desde la variable de contexto
-          BRANCH_NAME="${{ github.ref_name }}"
-          
-          echo "Validando el nombre de la rama: $BRANCH_NAME"
-          
-          # Verificamos si el nombre cumple la convención
-          if echo "$BRANCH_NAME" | grep -Eq '^(feature|bugfix|hotfix)/'; then
-            echo "¡Nombre de rama válido! ($BRANCH_NAME)"
-            exit 0 # El workflow pasa
+          # --- INICIO DEL SCRIPT DE VERIFICACIÓN ---
+
+          # Obtenemos el nombre de la rama.
+          # Es diferente para eventos 'push' y 'pull_request'.
+          if [ -n "$GITHUB_HEAD_REF" ]; then
+            # Es un Pull Request, usamos la rama de origen (head)
+            BRANCH_NAME="$GITHUB_HEAD_REF"
           else
-            echo "--- ERROR ---"
-            echo "El nombre de la rama '$BRANCH_NAME' NO CUMPLE la convención."
-            echo "Debe empezar con 'feature/', 'bugfix/', o 'hotfix/'."
-            exit 1 # Hacemos que el workflow falle
+            # Es un Push, usamos la rama actual (ref)
+            # Eliminamos el prefijo 'refs/heads/' del nombre de la rama
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           fi
+
+          echo "Verificando el nombre de la rama: $BRANCH_NAME"
+
+          # --- DEFINE TU PATRÓN AQUÍ ---
+          # Este ejemplo permite:
+          # - feature/
+          # - bugfix/
+          # - hotfix/
+          # Seguido de letras minúsculas, números o guiones.
+          # Ejemplo válido: feature/login-con-google
+          PATTERN_REGEX="^(feature|bugfix|hotfix)\/[a-z0-9-]+$"
+
+          # Verifica si el nombre de la rama coincide con el patrón
+          if [[ "$BRANCH_NAME" =~ $PATTERN_REGEX ]]; then
+            echo "✅ El nombre de la rama es válido."
+          else
+            echo "❌ ERROR: El nombre de la rama '$BRANCH_NAME' no es válido."
+            echo "Por favor, sigue el patrón: 'feature/', 'bugfix/' o 'hotfix/'"
+            echo "Ejemplo: feature/nueva-funcionalidad"
+            exit 1 # Termina el script con un código de error, fallando el check
+          fi
+
+          # --- FIN DEL SCRIPT ---
