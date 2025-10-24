@@ -3,27 +3,27 @@ name: Push Branch Validator
 on:
   push:
     branches:
-      - [cite_start]'!main'      # Excluye la rama 'main' [cite: 88, 99]
-      - [cite_start]'!master'    # Excluye la rama 'master' [cite: 88, 99]
+      - '!main'      # Excluye la rama 'main'
+      - '!master'    # Excluye la rama 'master'
 
 jobs:
   validate-branch-name:
     runs-on: ubuntu-latest
     steps:
-      - [cite_start]name: Check Branch Prefix [cite: 99]
+      - name: Check Branch Prefix
         run: |
-          # Obtenemos el nombre de la rama desde la variable de contexto [cite: 99]
+          # Obtenemos el nombre de la rama desde la variable de contexto
           BRANCH_NAME="${{ github.ref_name }}"
           
           echo "Validando el nombre de la rama: $BRANCH_NAME"
           
-          # Verificamos si el nombre cumple la convención [cite: 99]
+          # Verificamos si el nombre cumple la convención
           if echo "$BRANCH_NAME" | grep -Eq '^(feature|bugfix|hotfix)/'; then
             echo "¡Nombre de rama válido! ($BRANCH_NAME)"
-            [cite_start]exit 0 # El workflow pasa 
+            exit 0 # El workflow pasa
           else
             echo "--- ERROR ---"
             echo "El nombre de la rama '$BRANCH_NAME' NO CUMPLE la convención."
             echo "Debe empezar con 'feature/', 'bugfix/', o 'hotfix/'."
-            [cite_start]exit 1 # Hacemos que el workflow falle 
+            exit 1 # Hacemos que el workflow falle
           fi
