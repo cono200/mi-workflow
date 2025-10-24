@@ -7,5 +7,9 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v3
-      - name: Ejecutar script
-        run: echo '¡Hola desde GitHub Actions!'
+      - name: Ejecutar script en github
+        run: |
+          echo "Este es un script shell de varias líneas."
+          echo "El sistema operativo es $RUNNER_OS"
+          echo "La fecha es: $(date)"
+          echo "Estamos en la carpeta: $(pwd)"
